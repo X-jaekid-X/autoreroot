@@ -19,4 +19,4 @@ This script will cause inotify to auto patch your downloaded OTA's using Magisk 
 
  cp ~/scripts/auto_reroot_inotify.sh ~/.termux/boot/
 
-5) The script will not start on boot and monitor your /data/lineageos_updates folder for an OTA and auto patch it with Magisk to retain root.  Do not reboot your device when prompted by LineageOS, you only need to download the OTA when using this script.
+5) The script will now start on boot and monitor your /data/lineageos_updates folder for an OTA and auto patch it with Magisk to retain root when an OTA is detected.  Do not reboot your device when prompted by LineageOS, you only need to download the OTA when using this script.
