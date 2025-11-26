@@ -18,7 +18,10 @@ Installation Guide
 
 Make sure that auto_reroot_inotify.sh is in your Downloads folder then run this entire command:
 
-mkdir -p ~/.termux/boot && cp -f ~/storage/downloads/auto_reroot_inotify.sh ~/.termux/boot/ && chmod +x ~/.termux/boot/auto_reroot_inotify.sh && ~/.termux/boot/auto_reroot_inotify.sh &
+mkdir -p ~/.termux/boot && \
+cp -f ~/storage/downloads/auto_reroot_inotify.sh ~/.termux/boot/ && \
+chmod +x ~/.termux/boot/auto_reroot_inotify.sh && \
+nohup /data/data/com.termux/files/usr/bin/bash ~/.termux/boot/auto_reroot_inotify.sh >/dev/null 2>&1 &
 
 
 -- OR --
