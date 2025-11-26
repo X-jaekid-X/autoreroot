@@ -39,6 +39,4 @@ Run these commands:
 
  cp ~/scripts/auto_reroot_inotify.sh ~/.termux/boot/
 
-Termux:Boot will automatically run this script every time the device reboots.
-
 7. The script will now start on boot and monitor your /data/lineageos_updates folder for an OTA and auto patch it with Magisk to retain root when an OTA is detected.  Do not reboot your device when prompted by LineageOS, you only need to download the OTA when using this script.
