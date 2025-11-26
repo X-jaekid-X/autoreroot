@@ -26,7 +26,7 @@ Option 1: One-Line Installation
 
 Place `auto_reroot_inotify.sh` in your Downloads folder, then run:
 
-pkill -f auto_reroot_inotify && mkdir -p ~/.termux/boot && cp -f ~/storage/downloads/auto_reroot_inotify.sh ~/.termux/boot/ && chmod +x ~/.termux/boot/auto_reroot_inotify.sh && setsid ~/.termux/boot/auto_reroot_inotify.sh >/dev/null 2>&1 &
+pkill -f auto_reroot && mkdir -p ~/.termux/boot && cp -f ~/storage/downloads/auto_reroot_inotify.sh ~/.termux/boot/ && chmod +x ~/.termux/boot/auto_reroot_inotify.sh && setsid ~/.termux/boot/auto_reroot_inotify.sh >/dev/null 2>&1 &
 
 ### Option 2: Manual Installation
 
