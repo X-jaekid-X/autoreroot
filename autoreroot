@@ -20,44 +20,46 @@
 
 
 OTA_DIR="/data/lineageos_updates"
-LOGFILE=/data/local/tmp/auto_reroot.log
+LOGFILE="$HOME/auto_reroot.log"
 
 echo "=== Auto Reroot Started: $(date) ===" >> "$LOGFILE"
 
-su -c "
-inotifywait -m -e create --format '%f' $OTA_DIR
-" | while read FILENAME
-do
-    if [[ \"$FILENAME\" == *.zip ]]; then
-        
-        OTA_PATH=\"$OTA_DIR/$FILENAME\"
-        echo \"New OTA detected: $OTA_PATH\" | tee -a \"$LOGFILE\"
+# Ensure OTA folder exists
+su -c "mkdir -p $OTA_DIR"
 
-        termux-toast \"New OTA detected. Starting reroot...\"
+# Monitor the OTA directory for new files
+inotifywait -m -e create --format "%f" "$OTA_DIR" | while read FILENAME; do
+    # Only act on .zip files
+    if [[ "$FILENAME" == *.zip ]]; then
+        OTA_PATH="$OTA_DIR/$FILENAME"
+        echo "New OTA detected: $OTA_PATH" | tee -a "$LOGFILE"
+        termux-toast "New OTA detected. Starting reroot..."
 
-        # Query slot as root
-        ACTIVE_SLOT=$(su -c getprop ro.boot.slot_suffix)
-        echo \"Active slot: $ACTIVE_SLOT\" | tee -a \"$LOGFILE\"
+        # Get active slot
+        ACTIVE_SLOT=$(getprop ro.boot.slot_suffix)
+        echo "Active slot: $ACTIVE_SLOT" | tee -a "$LOGFILE"
 
-        # Test Magisk OTA support
-        su -c 'magisk --canota' 2>&1 | tee -a \"$LOGFILE\"
-        if [ \${PIPESTATUS[0]} -ne 0 ]; then
-            termux-toast \"Magisk OTA not ready. Abort.\"
-            echo \"Magisk OTA not ready. Abort.\" >> \"$LOGFILE\"
+        # Check if OTA can be patched
+        su -c magisk --canota 2>&1 | tee -a "$LOGFILE"
+        if [[ $? -ne 0 ]]; then
+            termux-toast "Magisk OTA not ready. Abort."
+            echo "Magisk OTA not ready. Abort." >> "$LOGFILE"
             continue
         fi
 
         # Patch inactive slot
-        su -c 'magisk --install-to-inactive-slot' 2>&1 | tee -a \"$LOGFILE\"
-        if [ \${PIPESTATUS[0]} -ne 0 ]; then
-            termux-toast \"Magisk patch failed!\"
-            echo \"Magisk patch failed!\" >> \"$LOGFILE\"
+        su -c magisk --install-to-inactive-slot 2>&1 | tee -a "$LOGFILE"
+        if [[ $? -ne 0 ]]; then
+            termux-toast "Magisk patch failed!"
+            echo "Magisk patch failed!" >> "$LOGFILE"
             continue
         fi
 
-        termux-toast \"Magisk patched the OTA! Rebooting...\"
-        echo \"Magisk patched the OTA! Rebooting...\" >> \"$LOGFILE\"
+        termux-toast "Magisk patched the OTA! Rebooting..."
+        echo "Magisk patched the OTA! Rebooting..." >> "$LOGFILE"
 
+        # Reboot device
         su -c reboot
     fi
 done
+
