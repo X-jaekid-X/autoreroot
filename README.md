@@ -36,6 +36,7 @@ Run this command:
 Run these commands:
 
  mkdir -p ~/.termux/boot
+
  cp ~/scripts/auto_reroot_inotify.sh ~/.termux/boot/
 
 Termux:Boot will automatically run this script every time the device reboots.
