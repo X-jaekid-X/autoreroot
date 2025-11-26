@@ -1,4 +1,4 @@
-#!/data/data/com.termux/files/usr/bin/bash
+/data/data/com.termux/files/usr/bin/bash
 #########################################################
 #                                                       #
 #                ___   _   _ _____ ____                 #
@@ -19,44 +19,63 @@
 #########################################################
 
 
+# Directory where LineageOS puts OTA zips
 OTA_DIR="/data/lineageos_updates"
-LOGFILE="$HOME/auto_reroot.log"
+
+# Log file
+LOGFILE=~/auto_reroot.log
 
 echo "=== Auto Reroot Started: $(date) ===" >> "$LOGFILE"
 
-su -c "inotifywait -m -e create --format '%f' '$OTA_DIR'" | while read FILENAME
-do
-    if [[ "\$FILENAME" == *.zip ]]; then
-        OTA_PATH=\"\$OTA_DIR/\$FILENAME\"
-        echo \"New OTA detected: \$OTA_PATH\" | tee -a \"$LOGFILE\"
+# Make sure tsu is installed
+if ! command -v tsu &> /dev/null; then
+    echo "Error: tsu not found! Install tsu in Termux." | tee -a "$LOGFILE"
+    exit 1
+fi
 
-        # Optional Termux toast
-        termux-toast \"New OTA detected. Starting reroot...\"
+# Check if OTA directory exists
+if ! tsu -c "[ -d '$OTA_DIR' ]"; then
+    echo "Error: OTA directory $OTA_DIR does not exist!" | tee -a "$LOGFILE"
+    exit 1
+fi
+
+# Check if inotifywait is available
+if ! command -v inotifywait &> /dev/null; then
+    echo "Error: inotifywait not found! Install inotify-tools in Termux." | tee -a "$LOGFILE"
+    exit 1
+fi
+
+# Monitor OTA directory for new files
+tsu -c "inotifywait -m -e create --format '%f' '$OTA_DIR'" 2>&1 | while read -r FILENAME; do
+    if [[ "$FILENAME" == *.zip ]]; then
+        OTA_PATH="$OTA_DIR/$FILENAME"
+        echo "New OTA detected: $OTA_PATH" | tee -a "$LOGFILE"
+
+        # Optional: Toast notification (Termux API must be installed)
+        command -v termux-toast &> /dev/null && termux-toast "New OTA detected. Starting reroot..."
 
         # Get active slot
-        ACTIVE_SLOT=\$(getprop ro.boot.slot_suffix)
-        echo \"Active slot: \$ACTIVE_SLOT\" | tee -a \"$LOGFILE\"
+        ACTIVE_SLOT=$(tsu -c "getprop ro.boot.slot_suffix")
+        echo "Active slot: $ACTIVE_SLOT" | tee -a "$LOGFILE"
 
         # Check if Magisk can patch OTA
-        su -c "magisk --canota" 2>&1 | tee -a "$LOGFILE"
-        if [ \$? -ne 0 ]; then
-            termux-toast \"Magisk OTA not ready. Abort.\"
-            echo \"Magisk OTA not ready. Abort.\" >> "$LOGFILE"
+        if ! tsu -c "magisk --canota" >> "$LOGFILE" 2>&1; then
+            echo "Magisk OTA patch not ready. Skipping." | tee -a "$LOGFILE"
+            command -v termux-toast &> /dev/null && termux-toast "Magisk OTA not ready. Abort."
             continue
         fi
 
         # Patch inactive slot
-        su -c "magisk --install-to-inactive-slot" 2>&1 | tee -a "$LOGFILE"
-        if [ \$? -ne 0 ]; then
-            termux-toast \"Magisk patch failed!\"
-            echo \"Magisk patch failed!\" >> "$LOGFILE"
+        if ! tsu -c "magisk --install-to-inactive-slot" >> "$LOGFILE" 2>&1; then
+            echo "Magisk patch failed!" | tee -a "$LOGFILE"
+            command -v termux-toast &> /dev/null && termux-toast "Magisk patch failed!"
             continue
         fi
 
-        termux-toast \"Magisk patched the OTA! Rebooting...\"
-        echo \"Magisk patched the OTA! Rebooting...\" >> "$LOGFILE"
+        echo "Magisk patched the OTA! Rebooting..." | tee -a "$LOGFILE"
+        command -v termux-toast &> /dev/null && termux-toast "Magisk patched the OTA! Rebooting..."
 
         # Reboot device
-        su -c "reboot"
+        tsu -c "reboot"
     fi
 done
