@@ -79,11 +79,94 @@ while true; do
                 echo "Active slot: $ACTIVE_SLOT" | tee -a "$LOGFILE"
                 
                 # Check if Magisk can patch OTA
-                if ! su -c "magisk --canota" >> "$LOGFILE" 2>&1; then
-                    echo "Magisk OTA patch not ready. Skipping." | tee -a "$LOGFILE"
-                    command -v termux-toast &> /dev/null && termux-toast "Magisk OTA not ready. Abort."
+#!/data/data/com.termux/files/usr/bin/bash
+#########################################################
+#                                                       #
+#                ___   _   _ _____ ____                 #
+#               / _ \ | | | |_   _/ __ \                #
+#              / /_\ \| | | | | || |  | |               #
+#              |  _  || | | | | || |  | |               #
+#              | | | || |_| | | || |__| |               #
+#              \_| |_/ \___/  |_| \____/                #
+#                                                       #                                                          #
+#       _____  ______ _____   ____   ____ _______       #
+#      |  __ \|  ____|  __ \ / __ \ / __ \__   __|      #
+#      | |__) | |__  | |__) | |  | | |  | | | |         #
+#      |  _  /|  __| |  _  /| |  | | |  | | | |         #
+#      | | \ \| |____| | \ \| |__| | |__| | | |         #
+#      |_|  \_\______|_|  \_\\____/ \____/  |_|         #
+#                                                       #
+#                       by jaekid                       #
+#########################################################
+
+
+# Set PATH to ensure all Termux commands are found
+export PATH="/data/data/com.termux/files/usr/bin:$PATH"
+
+# Directory where LineageOS puts OTA zips
+OTA_DIR="/data/lineageos_updates"
+
+# Log file
+LOGFILE=~/auto_reroot.log
+
+# File to track processed OTAs
+PROCESSED_FILE=~/.auto_reroot_processed
+
+echo "=== Auto Reroot Started: $(date) ===" >> "$LOGFILE"
+
+# Make sure su is available
+if ! command -v su &> /dev/null; then
+    echo "Error: su not found! Device must be rooted." | tee -a "$LOGFILE"
+    exit 1
+fi
+
+# Check if OTA directory exists
+if ! su -c "[ -d '$OTA_DIR' ]"; then
+    echo "Error: OTA directory $OTA_DIR does not exist!" | tee -a "$LOGFILE"
+    echo "Creating OTA directory..." | tee -a "$LOGFILE"
+    if ! su -c "mkdir -p '$OTA_DIR'"; then
+        echo "Failed to create OTA directory!" | tee -a "$LOGFILE"
+        exit 1
+    fi
+    echo "OTA directory created successfully." | tee -a "$LOGFILE"
+fi
+
+# Create processed file if it doesn't exist
+touch "$PROCESSED_FILE"
+
+echo "Monitoring $OTA_DIR for OTA updates (polling mode)..." | tee -a "$LOGFILE"
+
+# Poll for new OTA files every 10 seconds
+while true; do
+    # Get list of zip files in OTA directory
+    OTA_FILES=$(su -c "ls '$OTA_DIR'/*.zip 2>/dev/null" || true)
+    
+    if [ -n "$OTA_FILES" ]; then
+        while IFS= read -r OTA_PATH; do
+            FILENAME=$(basename "$OTA_PATH")
+            
+            # Check if we've already processed this file
+            if ! grep -q "^$FILENAME$" "$PROCESSED_FILE" 2>/dev/null; then
+                echo "New OTA detected: $OTA_PATH" | tee -a "$LOGFILE"
+                
+                # Mark as processed immediately to avoid double-processing
+                echo "$FILENAME" >> "$PROCESSED_FILE"
+                
+                # Optional: Toast notification
+                command -v termux-toast &> /dev/null && termux-toast "New OTA detected. Starting reroot..."
+                
+                # Get active slot
+                ACTIVE_SLOT=$(su -c "getprop ro.boot.slot_suffix")
+                echo "Active slot: $ACTIVE_SLOT" | tee -a "$LOGFILE"
+                
+                # Check if Magisk is available
+                if ! su -c "command -v magisk" >> "$LOGFILE" 2>&1; then
+                    echo "Magisk not found! Cannot patch OTA." | tee -a "$LOGFILE"
+                    command -v termux-toast &> /dev/null && termux-toast "Magisk not found!"
                     continue
                 fi
+                
+                echo "Attempting to patch inactive slot with Magisk..." | tee -a "$LOGFILE"
                 
                 # Patch inactive slot
                 if ! su -c "magisk --install-to-inactive-slot" >> "$LOGFILE" 2>&1; then
