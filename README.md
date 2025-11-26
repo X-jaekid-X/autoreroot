@@ -12,7 +12,7 @@ This script uses inotify to automatically patch downloaded OTAs with Magisk to p
 
 3. Install required packages:
 
-pkg install tsu inotify-tools termux-api
+pkg install inotify-tools termux-api
 
 4. Grant Termux storage permissions:
 
@@ -87,6 +87,5 @@ cat ~/auto_reroot.log
 
 ## Notes
 
-- The script requires root access via `tsu`
 - Your device must support A/B seamless updates
 - Magisk must be installed and functioning properly
