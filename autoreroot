@@ -1,4 +1,4 @@
-/data/data/com.termux/files/usr/bin/bash
+#!/data/data/com.termux/files/usr/bin/bash
 #########################################################
 #                                                       #
 #                ___   _   _ _____ ____                 #
@@ -28,12 +28,14 @@ OTA_DIR="/data/lineageos_updates"
 # Log file
 LOGFILE=~/auto_reroot.log
 
+# File to track processed OTAs
+PROCESSED_FILE=~/.auto_reroot_processed
+
 echo "=== Auto Reroot Started: $(date) ===" >> "$LOGFILE"
 
 # Make sure su is available
 if ! command -v su &> /dev/null; then
     echo "Error: su not found! Device must be rooted." | tee -a "$LOGFILE"
-    echo "PATH is: $PATH" >> "$LOGFILE"
     exit 1
 fi
 
@@ -48,45 +50,60 @@ if ! su -c "[ -d '$OTA_DIR' ]"; then
     echo "OTA directory created successfully." | tee -a "$LOGFILE"
 fi
 
-# Check if inotifywait is available
-if ! command -v inotifywait &> /dev/null; then
-    echo "Error: inotifywait not found! Install inotify-tools in Termux." | tee -a "$LOGFILE"
-    exit 1
-fi
+# Create processed file if it doesn't exist
+touch "$PROCESSED_FILE"
 
-echo "Monitoring $OTA_DIR for OTA updates..." | tee -a "$LOGFILE"
+echo "Monitoring $OTA_DIR for OTA updates (polling mode)..." | tee -a "$LOGFILE"
 
-# Monitor OTA directory for new files
-su -c "inotifywait -m -e create --format '%f' '$OTA_DIR'" 2>&1 | while read -r FILENAME; do
-    if [[ "$FILENAME" == *.zip ]]; then
-        OTA_PATH="$OTA_DIR/$FILENAME"
-        echo "New OTA detected: $OTA_PATH" | tee -a "$LOGFILE"
-
-        # Optional: Toast notification (Termux API must be installed)
-        command -v termux-toast &> /dev/null && termux-toast "New OTA detected. Starting reroot..."
-
-        # Get active slot
-        ACTIVE_SLOT=$(su -c "getprop ro.boot.slot_suffix")
-        echo "Active slot: $ACTIVE_SLOT" | tee -a "$LOGFILE"
-
-        # Check if Magisk can patch OTA
-        if ! su -c "magisk --canota" >> "$LOGFILE" 2>&1; then
-            echo "Magisk OTA patch not ready. Skipping." | tee -a "$LOGFILE"
-            command -v termux-toast &> /dev/null && termux-toast "Magisk OTA not ready. Abort."
-            continue
-        fi
-
-        # Patch inactive slot
-        if ! su -c "magisk --install-to-inactive-slot" >> "$LOGFILE" 2>&1; then
-            echo "Magisk patch failed!" | tee -a "$LOGFILE"
-            command -v termux-toast &> /dev/null && termux-toast "Magisk patch failed!"
-            continue
-        fi
-
-        echo "Magisk patched inactive slot. Rebooting..." | tee -a "$LOGFILE"
-        command -v termux-toast &> /dev/null && termux-toast "Magisk patched! Rebooting..."
-
-        # Reboot device
-        su -c "reboot"
+# Poll for new OTA files every 10 seconds
+while true; do
+    # Get list of zip files in OTA directory
+    OTA_FILES=$(su -c "ls '$OTA_DIR'/*.zip 2>/dev/null" || true)
+    
+    if [ -n "$OTA_FILES" ]; then
+        while IFS= read -r OTA_PATH; do
+            FILENAME=$(basename "$OTA_PATH")
+            
+            # Check if we've already processed this file
+            if ! grep -q "^$FILENAME$" "$PROCESSED_FILE" 2>/dev/null; then
+                echo "New OTA detected: $OTA_PATH" | tee -a "$LOGFILE"
+                
+                # Mark as processed immediately to avoid double-processing
+                echo "$FILENAME" >> "$PROCESSED_FILE"
+                
+                # Optional: Toast notification
+                command -v termux-toast &> /dev/null && termux-toast "New OTA detected. Starting reroot..."
+                
+                # Get active slot
+                ACTIVE_SLOT=$(su -c "getprop ro.boot.slot_suffix")
+                echo "Active slot: $ACTIVE_SLOT" | tee -a "$LOGFILE"
+                
+                # Check if Magisk can patch OTA
+                if ! su -c "magisk --canota" >> "$LOGFILE" 2>&1; then
+                    echo "Magisk OTA patch not ready. Skipping." | tee -a "$LOGFILE"
+                    command -v termux-toast &> /dev/null && termux-toast "Magisk OTA not ready. Abort."
+                    continue
+                fi
+                
+                # Patch inactive slot
+                if ! su -c "magisk --install-to-inactive-slot" >> "$LOGFILE" 2>&1; then
+                    echo "Magisk patch failed!" | tee -a "$LOGFILE"
+                    command -v termux-toast &> /dev/null && termux-toast "Magisk patch failed!"
+                    continue
+                fi
+                
+                echo "Magisk patched inactive slot. Rebooting..." | tee -a "$LOGFILE"
+                command -v termux-toast &> /dev/null && termux-toast "Magisk patched! Rebooting in 5s..."
+                
+                sleep 5
+                
+                # Reboot device
+                su -c "reboot"
+            fi
+        done <<< "$OTA_FILES"
     fi
+    
+    # Wait 10 seconds before checking again
+    sleep 10
 done
+EOF
