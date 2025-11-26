@@ -80,7 +80,6 @@ cat ~/auto_reroot.log
 ## Troubleshooting
 
 - Script not starting on boot? Make sure Termux:Boot is installed and has been opened at least once
-- Permission errors? Ensure `tsu` is installed and working: `pkg install tsu`
 - No notifications? Install Termux:API for toast notifications: `pkg install termux-api`
 
 ---
