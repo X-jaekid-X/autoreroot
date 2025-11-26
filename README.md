@@ -1,22 +1,43 @@
 Auto Reroot for LineageOS Updates
 
-This script will cause inotify to auto patch your downloaded OTA's using Magisk to keep root.  Older Android devices do not need this script.
+This script will cause inotify to auto patch your downloaded OTA's using Magisk to keep root.  Older Android devices do not need this scriot.
 
-1) Install Termux from F-Droid if not already installed.
-2) Install inotify for Termux by running the following command:
 
- pkg install inotify-tools
+Installation Guide
 
-3) Save the Auto Reroot script into the following Termux folder:
+1. Install Termux from F-Droid.
 
- ~/scripts/auto_reroot_inotify.sh
+2. Install Termux:Boot from F-Droid (required for auto-start on boot).
 
-4) Run the following commands:
+Open Termux and run:
 
- chmod +x ~/scripts/auto_reroot_inotify.sh
+pkg install inotify-tools
 
- nohup ~/scripts/auto_reroot_inotify.sh &
+3. Save the Script
 
- cp ~/scripts/auto_reroot_inotify.sh ~/.termux/boot/
+Save your auto reroot script to:
 
-5) The script will now start on boot and monitor your /data/lineageos_updates folder for an OTA and auto patch it with Magisk to retain root when an OTA is detected.  Do not reboot your device when prompted by LineageOS, you only need to download the OTA when using this script.
+~/scripts/auto_reroot_inotify.sh
+
+4. Make the Script Executable
+
+Run this command:
+
+chmod +x ~/scripts/auto_reroot_inotify.sh
+
+5. Start the Script Manually
+
+Run this command:
+
+nohup ~/scripts/auto_reroot_inotify.sh &
+
+6. Enable Auto-Start on Boot
+
+Run these commands:
+
+mkdir -p ~/.termux/boot
+cp ~/scripts/auto_reroot_inotify.sh ~/.termux/boot/
+
+Termux:Boot will automatically run this script every time the device reboots.
+
+7. The script will now start on boot and monitor your /data/lineageos_updates folder for an OTA and auto patch it with Magisk to retain root when an OTA is detected.  Do not reboot your device when prompted by LineageOS, you only need to download the OTA when using this script.
