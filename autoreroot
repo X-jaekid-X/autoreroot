@@ -55,8 +55,8 @@ do
             continue
         fi
 
-        termux-toast \"Magisk patched! Rebooting...\"
-        echo \"Magisk patched inactive slot. Rebooting...\" >> \"$LOGFILE\"
+        termux-toast \"Magisk patched the OTA! Rebooting...\"
+        echo \"Magisk patched OTA in the inactive slot. Rebooting...\" >> \"$LOGFILE\"
 
         su -c reboot
     fi
