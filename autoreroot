@@ -92,8 +92,8 @@ while true; do
                     continue
                 fi
                 
-                echo "Magisk patched inactive slot. Rebooting..." | tee -a "$LOGFILE"
-                command -v termux-toast &> /dev/null && termux-toast "Magisk patched! Rebooting in 5s..."
+                echo "Magisk patched the OTA! Rebooting..." | tee -a "$LOGFILE"
+                command -v termux-toast &> /dev/null && termux-toast "Magisk patched the OTA! Rebooting in 5s..."
                 
                 sleep 5
                 
